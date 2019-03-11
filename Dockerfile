@@ -47,7 +47,7 @@ RUN apt-get update && apt-get install -y \
     libavcodec-dev
 ADD https://api.github.com/repos/erikkaashoek/Comskip/git/refs/heads/master comskip-version.json
 RUN git clone --depth 1 https://github.com/erikkaashoek/Comskip.git /tmp/Comskip
-RUN cd /tmp/Comskip && ./autogen.sh && ./configure && make && make install
+RUN cd /tmp/Comskip && ./autogen.sh && ./configure && make -j ${CPUCORE} && make install
 
 # nodejs install
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
