@@ -45,7 +45,8 @@ RUN apt-get update && apt-get install -y \
     libavutil-dev \
     libavformat-dev \
     libavcodec-dev
-RUN git clone https://github.com/erikkaashoek/Comskip.git /tmp/Comskip
+ADD https://api.github.com/repos/erikkaashoek/Comskip/git/refs/heads/master comskip-version.json
+RUN git clone --depth 1 https://github.com/erikkaashoek/Comskip.git /tmp/Comskip
 RUN cd /tmp/Comskip && ./autogen.sh && ./configure && make && make install
 
 # nodejs install
@@ -62,7 +63,7 @@ RUN apt-get -y remove $DEV && \
 
 # install EPGStation
 # Prevent git clone cache https://stackoverflow.com/a/39278224
-ADD https://api.github.com/repos/l3tnun/EPGStation/git/refs/heads/master version.json
+ADD https://api.github.com/repos/l3tnun/EPGStation/git/refs/heads/master epgstation-version.json
 RUN cd /usr/local/ && \
     git clone --depth 1 https://github.com/l3tnun/EPGStation.git && \
     cd /usr/local/EPGStation && \
