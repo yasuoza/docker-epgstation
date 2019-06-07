@@ -3,7 +3,7 @@ FROM debian:stretch
 EXPOSE 8888
 ARG CPUCORE='4'
 ENV DEV='automake curl wget autoconf libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev vainfo pkg-config texinfo zlib1g-dev'
-ENV FFMPEG_VERSION=4.1.3
+ENV FFMPEG_VERSION=3.4
 
 RUN apt-get update && \
     apt-get -y install $DEV && \
