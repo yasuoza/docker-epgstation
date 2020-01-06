@@ -15,14 +15,23 @@ jobs:
         run: |
           IMAGE_TAG=$(curl -fsL https://raw.githubusercontent.com/l3tnun/EPGStation/master/package-lock.json | jq .version -r)
           echo "::set-env name=IMAGE_TAG::$IMAGE_TAG"
+      - name: Check remote image tag
+        id: check_remote_image_tag
+        run: |
+          tags_url=https://registry.hub.docker.com/v1/repositories/yasuoza/epgstation/tags
+          remote_tag_exists=$(curl -sfL $tags_url | jq ".[].name == \"$IMAGE_TAG\"" -r)
+          echo "::set-output name=remote_tag_exists::$remote_tag_exists"
       - name: Build image
+        if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
         run: |
           docker build . -t yasuoza/epgstation:$IMAGE_TAG
       - name: Login to Docker Hub
+        if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
         env:
           DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
           DOCKER_HUB_PASS: ${{ secrets.DOCKER_HUB_PASS }}
         run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASS
       - name: Push Docker Hub
+        if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
         run: |
           docker push yasuoza/epgstation:$IMAGE_TAG
