@@ -12,8 +12,11 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Build image
+      - name: Set IMAGE_TAG
         run: |
           IMAGE_TAG=$(curl -fsL https://raw.githubusercontent.com/l3tnun/EPGStation/master/package-lock.json | jq .version -r)
           echo "::set-env name=IMAGE_TAG::$IMAGE_TAG"
+
+      - name: Build image
+        run: |
           docker build . -t yasuoza/epgstation:$IMAGE_TAG
