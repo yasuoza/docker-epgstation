@@ -1,0 +1,19 @@
+name: Docker build and push
+on:
+  push:
+
+jobs:
+  build:
+    name: docker build and push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: Build image
+        run: |
+          IMAGE_TAG=$(curl -fsL https://raw.githubusercontent.com/l3tnun/EPGStation/master/package-lock.json | jq .version -r)
+          echo "::set-env name=IMAGE_TAG::$IMAGE_TAG"
+          docker build . -t yasuoza/epgstation:$IMAGE_TAG
