@@ -65,11 +65,11 @@ RUN apt-get -y remove $DEV && \
 
 # install EPGStation
 # Prevent git clone cache https://stackoverflow.com/a/39278224
-ADD https://api.github.com/repos/l3tnun/EPGStation/git/refs/heads/master epgstation-version.json
+ADD https://api.github.com/repos/l3tnun/EPGStation/git/refs/heads/v2 epgstation-version.json
 RUN cd /usr/local/ && \
-    git clone --depth 1 https://github.com/l3tnun/EPGStation.git && \
+    git clone --depth 1 https://github.com/l3tnun/EPGStation.git --branch v2 && \
     cd /usr/local/EPGStation && \
-    npm install && \
+    npm run all-install && \
     npm run build
 
 VOLUME "/usr/local/EPGStation/config"
