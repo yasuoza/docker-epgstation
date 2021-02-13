@@ -20,7 +20,7 @@ jobs:
         id: check_remote_image_tag
         run: |
           tags_url=https://registry.hub.docker.com/v1/repositories/yasuoza/epgstation/tags
-          remote_tag_exists=$(curl -sfL $tags_url | jq "[.[].name] | contains([\"{{ env.IMAGE_TAG }}\"])" -r)
+          remote_tag_exists=$(curl -sfL $tags_url | jq "[.[].name] | contains([\"${{ env.IMAGE_TAG }}\"])" -r)
           echo "::set-output name=remote_tag_exists::$remote_tag_exists"
       - name: Build image
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
