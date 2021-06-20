@@ -3,7 +3,7 @@ FROM node:14-buster-slim
 EXPOSE 8888
 ARG CPUCORE='4'
 ENV DEV='automake curl wget autoconf libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev vainfo pkg-config texinfo zlib1g-dev'
-ENV FFMPEG_VERSION=4.1
+ENV FFMPEG_VERSION=4.3
 
 RUN rm /etc/apt/sources.list && \
     echo "deb http://deb.debian.org/debian buster main contrib non-free" >> /etc/apt/sources.list && \
