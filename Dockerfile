@@ -1,9 +1,12 @@
-# https://github.com/l3tnun/docker-mirakurun-epgstation/blob/824246a/epgstation/Dockerfile
-FROM node:16-buster-slim
-EXPOSE 8888
+ARG IMAGE_TAG
 ARG CPUCORE='4'
+
+FROM l3tnun/epgstation:v$IMAGE_TAG
+
+EXPOSE 8888
+
 ENV DEV='automake curl wget autoconf libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev vainfo pkg-config texinfo zlib1g-dev'
-ENV FFMPEG_VERSION=4.3
+ENV FFMPEG_VERSION=4.1
 
 RUN rm /etc/apt/sources.list && \
     echo "deb http://deb.debian.org/debian buster main contrib non-free" >> /etc/apt/sources.list && \
@@ -63,21 +66,6 @@ RUN apt-get -y remove $DEV && \
     rm -rf /tmp/ffmpeg_sources && \
     rm -rf /tmp/Comskip
 
-# install EPGStation
-# Prevent git clone cache https://stackoverflow.com/a/39278224
-ADD https://api.github.com/repos/l3tnun/EPGStation/git/refs/heads/master epgstation-version.json
-RUN cd /usr/local/ && \
-    git clone --depth 1 https://github.com/l3tnun/EPGStation.git && \
-    cd /usr/local/EPGStation && \
-    npm run all-install && \
-    npm run build
-
-VOLUME "/usr/local/EPGStation/config"
-VOLUME "/usr/local/EPGStation/data"
-VOLUME "/usr/local/EPGStation/thumbnail"
-VOLUME "/usr/local/EPGStation/logs"
-VOLUME "/usr/local/EPGStation/recorded"
-
-WORKDIR /usr/local/EPGStation
+WORKDIR /app
 
 CMD ["npm", "start"]
