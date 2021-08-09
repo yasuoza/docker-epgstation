@@ -68,4 +68,5 @@ RUN apt-get -y remove $DEV && \
 
 WORKDIR /app
 
+ENTRYPOINT []
 CMD ["npm", "start"]
