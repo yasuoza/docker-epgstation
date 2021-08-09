@@ -30,7 +30,7 @@ jobs:
       - name: Build image
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
         run: |
-          docker build . -t yasuoza/epgstation:$IMAGE_TAG
+          docker build . -t yasuoza/epgstation:$IMAGE_TAG --build-arg IMAGE_TAG=$IMAGE_TAG
       - name: Login to Docker Hub
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
         env:
