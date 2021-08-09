@@ -1,5 +1,5 @@
 # https://github.com/l3tnun/docker-mirakurun-epgstation/blob/824246a/epgstation/Dockerfile
-FROM node:14-buster-slim
+FROM node:16-buster-slim
 EXPOSE 8888
 ARG CPUCORE='4'
 ENV DEV='automake curl wget autoconf libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev vainfo pkg-config texinfo zlib1g-dev'
