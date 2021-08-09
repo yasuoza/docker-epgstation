@@ -40,4 +40,5 @@ jobs:
       - name: Push Docker Hub
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
         run: |
+          docker image ls -a
           docker push yasuoza/epgstation:$IMAGE_TAG
