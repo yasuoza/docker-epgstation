@@ -1,7 +1,6 @@
-ARG IMAGE_TAG
 ARG CPUCORE='4'
 
-FROM l3tnun/epgstation:v$IMAGE_TAG
+FROM l3tnun/epgstation:v2.6.15
 
 EXPOSE 8888
 

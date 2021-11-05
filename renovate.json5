@@ -1,0 +1,19 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "timezone": "Asia/Tokyo",
+  "enabledManagers": [
+    "github-actions",
+    "dockerfile"
+  ],
+  "pin": {
+    "automerge": true
+  },
+  "minor": {
+    "automerge": true
+  },
+  "patch": {
+    "automerge": true
+  }
+}

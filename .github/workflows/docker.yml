@@ -13,18 +13,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set IMAGE_TAG
-        run: |
-          IMAGE_TAG=$(curl -fsL https://raw.githubusercontent.com/l3tnun/EPGStation/master/package-lock.json | jq .version -r)
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-
-      - name: Check remote image tag
-        id: check_remote_image_tag
-        run: |
-          tags_url=https://registry.hub.docker.com/v1/repositories/yasuoza/epgstation/tags
-          remote_tag_exists=$(curl -sfL $tags_url | jq "[.[].name] | contains([\"${{ env.IMAGE_TAG }}\"])" -r)
-          echo "::set-output name=remote_tag_exists::$remote_tag_exists"
-
       - name: Install buildx
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
         uses: docker/setup-buildx-action@v1
@@ -46,6 +34,11 @@ jobs:
           DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
           DOCKER_HUB_PASS: ${{ secrets.DOCKER_HUB_PASS }}
         run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASS
+
+      - name: Set IMAGE_TAG
+        run: |
+          IMAGE_TAG=$(cat Dockerfile | awk '/FROM/{print $2}' | awk -F':v' '{print $2}')
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Push Docker Hub
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
