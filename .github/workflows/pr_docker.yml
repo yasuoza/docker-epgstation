@@ -1,16 +1,17 @@
-name: Docker build and push
+name: PR Docker build and push
 on:
   pull_request_target:
 
 jobs:
   build:
-    name: docker build and push
+    name: PR docker build and push
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install buildx
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
