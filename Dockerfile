@@ -67,5 +67,11 @@ RUN apt-get -y remove $DEV && \
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y patch
+
+ADD pr-614.patch /tmp
+RUN patch dist/model/api/iptv/IPTVApiModel.js /tmp/pr-614.patch && \
+    rm -rf  /tmp/pr-614.patch
+
 ENTRYPOINT []
 CMD ["npm", "start"]
