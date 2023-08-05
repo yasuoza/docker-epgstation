@@ -1,6 +1,6 @@
 ARG CPUCORE='4'
 
-FROM l3tnun/epgstation:v2.6.20
+FROM l3tnun/epgstation:v2.7.1
 
 EXPOSE 8888
 
