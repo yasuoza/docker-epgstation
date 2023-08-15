@@ -49,8 +49,6 @@ RUN mkdir /tmp/ffmpeg_sources && \
     make install
 
 # comskip
-RUN echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
-RUN echo "deb-src http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
 RUN apt-get update && apt-get install -y \
     libargtable2-dev \
     libavutil-dev \
