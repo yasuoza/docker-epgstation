@@ -1,6 +1,9 @@
 ARG CPUCORE='4'
 
-FROM l3tnun/epgstation:v2.6.20
+FROM l3tnun/epgstation:v2.7.1 AS epgstation
+FROM node:18-buster
+
+COPY --from=epgstation /app /app
 
 EXPOSE 8888
 
@@ -46,8 +49,6 @@ RUN mkdir /tmp/ffmpeg_sources && \
     make install
 
 # comskip
-RUN echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
-RUN echo "deb-src http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
 RUN apt-get update && apt-get install -y \
     libargtable2-dev \
     libavutil-dev \
@@ -68,10 +69,6 @@ RUN apt-get -y remove $DEV && \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y patch
-
-ADD pr-614.patch /tmp
-RUN patch dist/model/api/iptv/IPTVApiModel.js /tmp/pr-614.patch && \
-    rm -rf  /tmp/pr-614.patch
 
 ENTRYPOINT []
 CMD ["npm", "start"]
