@@ -30,7 +30,7 @@ jobs:
 
       - name: Install buildx
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
         id: buildx
 
       - name: Cache Docker layers
