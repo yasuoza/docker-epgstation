@@ -35,7 +35,7 @@ jobs:
 
       - name: Cache Docker layers
         if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: ${{ github.ref }}-${{ github.sha }}
