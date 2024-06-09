@@ -1,6 +1,6 @@
 ARG CPUCORE='4'
 
-FROM l3tnun/epgstation:v2.9.1 AS epgstation
+FROM l3tnun/epgstation:v2.10.0 AS epgstation
 FROM node:18-buster
 
 COPY --from=epgstation /app /app
