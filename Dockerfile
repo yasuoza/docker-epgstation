@@ -1,74 +1,36 @@
-ARG CPUCORE='4'
+ARG EPGSTATION_VERSION=v3.0.0-beta4
+# v3はNode.jsのネイティブモジュールを含むため、公式イメージのNode.jsとglibcも引き継ぐ。
+FROM l3tnun/epgstation:${EPGSTATION_VERSION}@sha256:86cb8ad9d8b38bae2fc0e5b451f7d9ef2e38d618d4b916de45b84ab0459e8518 AS upstream
 
-FROM l3tnun/epgstation:v2.10.0 AS epgstation
-FROM node:18-buster
+FROM upstream AS comskip-builder
+ARG CPUCORE=4
+ARG COMSKIP_REV=a140b6ac8bc8f596729e9052819affc779c3b377
 
-COPY --from=epgstation /app /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        autoconf automake build-essential ca-certificates git libargtable2-dev libavcodec-dev \
+        libavformat-dev libavutil-dev libswscale-dev libtool pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+RUN git init /tmp/Comskip && \
+    git -C /tmp/Comskip remote add origin https://github.com/erikkaashoek/Comskip.git && \
+    git -C /tmp/Comskip fetch --depth 1 origin "${COMSKIP_REV}" && \
+    git -C /tmp/Comskip checkout --detach FETCH_HEAD
+RUN cd /tmp/Comskip && ./autogen.sh && ./configure --disable-gui && \
+    make -j"${CPUCORE}" && make install
 
-EXPOSE 8888
-
-ENV DEV='automake curl wget autoconf libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev vainfo pkg-config texinfo zlib1g-dev'
-ENV FFMPEG_VERSION=4.1
-
-RUN rm /etc/apt/sources.list && \
-    echo "deb http://deb.debian.org/debian buster main contrib non-free" >> /etc/apt/sources.list && \
-    echo "deb-src http://deb.debian.org/debian buster main contrib non-free" >> /etc/apt/sources.list && \
-    echo "deb http://security.debian.org/debian-security buster/updates main contrib" >> /etc/apt/sources.list && \
-    echo "deb-src http://security.debian.org/debian-security buster/updates main contrib" >> /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get -y install $DEV && \
-    apt-get -y install make git gcc g++ build-essential python3 yasm libx264-dev libmp3lame-dev libopus-dev && \
-    apt-get -y install libasound2 libass9 libvdpau1 libva-x11-2 libva-drm2 libxcb-shm0 libxcb-xfixes0 libxcb-shape0 libvorbisenc2 libtheora0 libx265-dev libnuma-dev i965-va-driver-shaders
-
-#ffmpeg build
-RUN mkdir /tmp/ffmpeg_sources && \
-    cd /tmp/ffmpeg_sources && \
-    wget http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.bz2 -O ffmpeg.tar.bz2 && \
-    tar xjvf ffmpeg.tar.bz2 && \
-    cd /tmp/ffmpeg_sources/ffmpeg* && \
-    ./configure \
-      --prefix=/usr/local \
-      --disable-shared \
-      --pkg-config-flags=--static \
-      --enable-gpl \
-      --enable-vaapi \
-      --enable-libass \
-      --enable-libfreetype \
-      --enable-libmp3lame \
-      --enable-libopus \
-      --enable-libtheora \
-      --enable-libvorbis \
-      --enable-libx264 \
-      --enable-libx265 \
-      --enable-nonfree \
-      --disable-debug \
-      --disable-doc \
-    && \
-    cd /tmp/ffmpeg_sources/ffmpeg* && \
-    make -j${CPUCORE} && \
-    make install
-
-# comskip
-RUN apt-get update && apt-get install -y \
-    libargtable2-dev \
-    libavutil-dev \
-    libavformat-dev \
-    libavcodec-dev
-ADD https://api.github.com/repos/erikkaashoek/Comskip/git/refs/heads/master comskip-version.json
-RUN git clone --depth 1 https://github.com/erikkaashoek/Comskip.git /tmp/Comskip
-RUN cd /tmp/Comskip && ./autogen.sh && ./configure && make -j ${CPUCORE} && make install
-
-# 不要なパッケージを削除
-RUN apt-get -y remove $DEV && \
-    apt-get autoremove -y && \
-    apt-get clean && \
+FROM upstream
+# DS718+のi965のエンコード用シェーダーはDebianのnon-freeに含まれる。
+# インターレース解除は既存config.ymlのCPU yadif設定を引き続き使用する。
+RUN sed -i 's/^Components: main$/Components: main contrib non-free/' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl ffmpeg i965-va-driver-shaders libargtable2-0 \
+        python3 vainfo wget && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -rf /tmp/ffmpeg_sources && \
-    rm -rf /tmp/Comskip
+    ln -s /usr/bin/ffmpeg /usr/local/bin/ffmpeg && \
+    ln -s /usr/bin/ffprobe /usr/local/bin/ffprobe
+
+COPY --from=comskip-builder /usr/local/bin/comskip /usr/local/bin/comskip
 
 WORKDIR /app
-
-RUN apt-get update && apt-get install -y patch
-
+EXPOSE 8888
 ENTRYPOINT []
 CMD ["npm", "start"]

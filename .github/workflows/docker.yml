@@ -2,9 +2,11 @@ name: Docker build and push
 on:
   push:
     branches:
-      - '*'
-      - '!renovate/**'
+      - master
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -12,55 +14,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 1
+          persist-credentials: false
 
-      - name: Set IMAGE_TAG
+      - name: Set image tag
+        id: image
         run: |
-          IMAGE_TAG=$(cat Dockerfile | awk '/FROM/{print $2}' | awk -F':v' '{print $2}')
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          version=$(sed -n 's/^ARG EPGSTATION_VERSION=v//p' Dockerfile)
+          test -n "$version"
+          echo "tag=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Check remote image tag
-        id: check_remote_image_tag
-        run: |
-          tags_url=https://registry.hub.docker.com/v1/repositories/yasuoza/epgstation/tags
-          remote_tag_exists=$(curl -sfL $tags_url | jq "[.[].name] | contains([\"${{ env.IMAGE_TAG }}\"])" -r)
-          echo "::set-output name=remote_tag_exists::$remote_tag_exists"
-
-      - name: Install buildx
-        if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
-        uses: docker/setup-buildx-action@v1
-        id: buildx
-
-      - name: Cache Docker layers
-        if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ github.ref }}-${{ github.sha }}
-          restore-keys: |
-            ${{ github.ref }}-${{ github.sha }}
-            ${{ github.ref }}
-            refs/head/master
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Login to Docker Hub
-        if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
-        env:
-          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-          DOCKER_HUB_PASS: ${{ secrets.DOCKER_HUB_PASS }}
-        run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASS
-
-      - name: Push Docker Hub
-        if: steps.check_remote_image_tag.outputs.remote_tag_exists != 'true'
-        uses: docker/build-push-action@v2
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
-          builder: ${{ steps.buildx.outputs.name }}
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASS }}
+
+      # 既存タグがあってもDockerfileの修正を公開できるよう、pushごとに再ビルドする。
+      - name: Build and push Docker image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
           push: true
           tags: |
             yasuoza/epgstation:latest
-            yasuoza/epgstation:${{ env.IMAGE_TAG }}
+            yasuoza/epgstation:${{ steps.image.outputs.tag }}
           build-args: |
-            IMAGE_TAG=${{ env.IMAGE_TAG }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
+            CPUCORE=4
+          cache-from: type=gha,scope=epgstation-amd64
+          cache-to: type=gha,mode=max,scope=epgstation-amd64
