@@ -27,6 +27,11 @@ RUN curl -fSL --retry 3 --connect-timeout 15 \
     tar -xJf /build/ffmpeg.tar.xz -C /build
 COPY scripts/build-kodi-ffmpeg.sh /build/build-kodi-ffmpeg.sh
 RUN CPUCORE="${CPUCORE}" /bin/sh /build/build-kodi-ffmpeg.sh "/build/ffmpeg-${FFMPEG_KODI_VERSION}"
+COPY patches/kodi-arib-dvb.patch /build/kodi-arib-dvb.patch
+# ARIBの消去を伝え、終了時刻未定の字幕で未来の消去PTSやheartbeatのちらつきを生成しない。
+# パッチ対象だけ再コンパイルし、修正時にも全codecをビルドし直さず検証できるようにする。
+RUN cd "/build/ffmpeg-${FFMPEG_KODI_VERSION}" && git apply /build/kodi-arib-dvb.patch && \
+    make -j"${CPUCORE}" && make install
 
 FROM upstream AS comskip-builder
 ARG CPUCORE=4

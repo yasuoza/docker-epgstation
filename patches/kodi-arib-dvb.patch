@@ -1,0 +1,72 @@
+Kodi用の専用FFmpeg 7.1.5にだけ適用する。
+画像字幕の明示的な消去は upstream PR #24067 の対応に基づく。
+https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/24067
+終了時刻未定のARIB字幕では未来の消去パケットを生成せず、実際の消去・置換を伝える。
+これにより時間補正heartbeatによる消去と再描画を避ける。
+
+--- a/libavcodec/libaribcaption.c
++++ b/libavcodec/libaribcaption.c
+@@ -360,6 +360,13 @@
+ 
+     case ARIBCC_RENDER_STATUS_NO_IMAGE:
+         ff_dlog(ctx, "no image\n");
++        /* An explicit ARIB clear must also erase the downstream DVB bitmap.
++         * Returning no subtitle leaves Kodi displaying the previous caption. */
++        if (ctx->caption.region_count == 0) {
++            sub->format = 0;
++            sub->num_rects = 0;
++            return 1;
++        }
+         return 0;
+ 
+     case ARIBCC_RENDER_STATUS_ERROR:
+@@ -377,6 +384,11 @@
+     if (!ctx->render_result.image_count || ctx->render_result.images == NULL) {
+         aribcc_render_result_cleanup(&ctx->render_result);
+         ff_dlog(ctx, "no image (%d)\n", ctx->render_result.image_count);
++        if (ctx->caption.region_count == 0) {
++            sub->format = 0;
++            sub->num_rects = 0;
++            return 1;
++        }
+         return 0;
+     }
+ 
+--- a/fftools/ffmpeg_enc.c
++++ b/fftools/ffmpeg_enc.c
+@@ -387,7 +387,10 @@
+        packet to clear them */
+     /* XXX: signal it in the codec context ? */
+     if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE)
+-        nb = 2;
++        /* ARIB's indefinite duration means "until replaced/cleared", not a
++         * clear 49 days in the future. That clear corrupts subsequent DTS.
++         * Send the actual ARIB clear instead; no heartbeat redraw is needed. */
++        nb = sub->num_rects && sub->end_display_time != UINT32_MAX ? 2 : 1;
+     else if (enc->codec_id == AV_CODEC_ID_ASS)
+         nb = FFMAX(sub->num_rects, 1);
+     else
+@@ -431,7 +434,10 @@
+         av_shrink_packet(pkt, subtitle_out_size);
+         pkt->time_base = AV_TIME_BASE_Q;
+         pkt->pts       = sub->pts;
+-        pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
++        /* An unknown DVB duration must not delay the muxer by UINT32_MAX ms. */
++        pkt->duration = enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
++                        sub->end_display_time == UINT32_MAX ? 0 :
++                        av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
+         if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
+             /* XXX: the pts correction is handled here. Maybe handling
+                it in the codec would be better */
+@@ -772,7 +778,10 @@
+                                      (AVSubtitle*)frame->buf[0]->data : NULL;
+ 
+         // no flushing for subtitles
+-        return subtitle && subtitle->num_rects ?
++        /* Empty ARIB subtitles are explicit clear-screen events. DVB must
++         * encode them so Kodi can remove the previous bitmap at that PTS. */
++        return subtitle && (subtitle->num_rects ||
++                            ost->enc_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE) ?
+                do_subtitle_out(of, ost, subtitle, pkt) : 0;
+     }
+ 
