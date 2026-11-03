@@ -30,6 +30,10 @@ RUN sed -i 's/^Components: main$/Components: main contrib non-free/' /etc/apt/so
 
 COPY --from=comskip-builder /usr/local/bin/comskip /usr/local/bin/comskip
 
+# aribb24.js 2.xが必要とする字幕管理情報をHLSのID3から欠落させない。
+COPY patches/keep-caption-management.cjs /opt/epgstation-patches/keep-caption-management.cjs
+RUN node /opt/epgstation-patches/keep-caption-management.cjs /app/node_modules/arib-subtitle-timedmetadater
+
 WORKDIR /app
 EXPOSE 8888
 ENTRYPOINT []
